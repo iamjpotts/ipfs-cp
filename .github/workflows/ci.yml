@@ -1,0 +1,46 @@
+name: ci
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  deny:
+    name: Cargo deny
+    strategy:
+      matrix:
+        os:
+          - ubuntu-20.04
+        toolchain:
+          - stable
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - run: cargo install cargo-deny
+      - run: cargo deny check
+    timeout-minutes: 15
+
+  test-nix:
+    name: Cargo test on nix
+    strategy:
+      matrix:
+        os:
+          - ubuntu-20.04
+        toolchain:
+          - 1.64
+          - stable
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - run: docker version
+      - run: cargo build
+      - run: cargo test --no-run
+      - run: cargo test --no-fail-fast
+    timeout-minutes: 30

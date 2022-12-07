@@ -1,0 +1,52 @@
+
+[advisories]
+notice = "deny"
+unmaintained = "deny"
+vulnerability = "deny"
+yanked = "deny"
+
+# This library uses the MPL-2 license.
+#
+# See https://www.mozilla.org/en-US/MPL/2.0/permissive-code-into-mpl/
+[licenses]
+allow = [
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "MIT",
+    "MPL-2.0",
+    "Unicode-DFS-2016",
+]
+default = "deny"
+confidence-threshold = 1.0
+unlicensed = "deny"
+
+[bans]
+allow = [
+]
+deny = [
+    # License is non-trivial
+    { name = "ring" },
+]
+multiple-versions = "warn"
+skip = [
+    # Transaitive dependency of both simple-logger and tokio (tokio has newer)
+    { name = "hermit-abi" },
+]
+skip-tree = [
+    # Transitive dependency of both hyper-tls (through native-tls and schannel) and tokio (through mio)
+    { name = "windows-sys" },
+]
+wildcards = "warn"
+
+[sources]
+allow-git = []
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+# TODO: Change to deny once rust-ipfs-api releases a version with basic auth
+unknown-git = "warn"
+unknown-registry = "deny"
+
+[sources.allow-org]
+github = []
+gitlab = []
+bitbucket = []

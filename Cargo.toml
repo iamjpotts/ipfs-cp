@@ -1,0 +1,22 @@
+[package]
+authors = ["Joshua Potts <8704475+iamjpotts@users.noreply.github.com>"]
+description = "Copy mutable files from one IPFS node to another"
+edition = "2021"
+include = [
+    "src/**/*.rs",
+    "Cargo.toml",
+]
+keywords = ["ipfs"]
+name = "ipfs-cp"
+license = "MPL-2.0"
+readme = "README.md"
+rust-version = "1.64"
+version = "0.0.1"
+
+[dependencies]
+itertools = "0.10"
+ipfs-api = { git = "https://github.com/iamjpotts/rust-ipfs-api", branch = "20221203-basic-auth", features = ["ipfs-api-backend-hyper", "with-hyper-tls"], default_features = false }
+thiserror = "1.0"
+tokio = { version = "1.23", features = ["macros", "rt-multi-thread", "time"] }
+
+[dev-dependencies]
