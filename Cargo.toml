@@ -11,7 +11,7 @@ name = "ipfs-cp"
 license = "MPL-2.0"
 readme = "README.md"
 rust-version = "1.64"
-version = "0.0.1"
+version = "0.0.2-alpha"
 
 [dependencies]
 itertools = "0.10"
