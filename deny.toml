@@ -4,6 +4,16 @@ notice = "deny"
 unmaintained = "deny"
 vulnerability = "deny"
 yanked = "deny"
+ignore = [
+    # Requires upgrading remove_dir_all dependency of ipfs-api
+    "RUSTSEC-2023-0018",
+    # Requires upgrading openssl dependency of ipfs-api
+    "RUSTSEC-2023-0022",
+    # Requires upgrading openssl dependency of ipfs-api
+    "RUSTSEC-2023-0023",
+    # Requires upgrading openssl dependency of ipfs-api
+    "RUSTSEC-2023-0024",
+]
 
 # This library uses the MPL-2 license.
 #
@@ -40,7 +50,9 @@ skip-tree = [
 wildcards = "warn"
 
 [sources]
-allow-git = []
+allow-git = [
+    "https://github.com/iamjpotts/rust-ipfs-api"
+]
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 # TODO: Change to deny once rust-ipfs-api releases a version with basic auth
 unknown-git = "warn"
