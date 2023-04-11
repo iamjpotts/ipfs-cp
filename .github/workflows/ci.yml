@@ -31,7 +31,7 @@ jobs:
         os:
           - ubuntu-20.04
         toolchain:
-          - 1.64
+          - 1.68
           - stable
     runs-on: ${{ matrix.os }}
     steps:
