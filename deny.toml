@@ -13,6 +13,9 @@ ignore = [
     "RUSTSEC-2023-0023",
     # Requires upgrading openssl dependency of ipfs-api
     "RUSTSEC-2023-0024",
+    # Requires upgrading h2 dependency of ipfs-api via upgrading hyper dependency of ipfs-api
+    "RUSTSEC-2023-0034",
+
 ]
 
 # This library uses the MPL-2 license.
