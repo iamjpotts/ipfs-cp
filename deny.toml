@@ -5,17 +5,8 @@ unmaintained = "deny"
 vulnerability = "deny"
 yanked = "deny"
 ignore = [
-    # Requires upgrading remove_dir_all dependency of ipfs-api
-    "RUSTSEC-2023-0018",
-    # Requires upgrading openssl dependency of ipfs-api
-    "RUSTSEC-2023-0022",
-    # Requires upgrading openssl dependency of ipfs-api
-    "RUSTSEC-2023-0023",
-    # Requires upgrading openssl dependency of ipfs-api
-    "RUSTSEC-2023-0024",
-    # Requires upgrading h2 dependency of ipfs-api via upgrading hyper dependency of ipfs-api
+    # Requires moving away from hyper-tls dependency of ipfs-api, since hyper-tls is no longer in maintenance
     "RUSTSEC-2023-0034",
-
 ]
 
 # This library uses the MPL-2 license.
@@ -43,7 +34,7 @@ deny = [
 ]
 multiple-versions = "warn"
 skip = [
-    # Transaitive dependency of both simple-logger and tokio (tokio has newer)
+    # Transitive dependency of both simple-logger and tokio (tokio has newer)
     { name = "hermit-abi" },
 ]
 skip-tree = [
