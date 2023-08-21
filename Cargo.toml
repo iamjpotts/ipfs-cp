@@ -14,7 +14,7 @@ rust-version = "1.68"
 version = "0.0.2-alpha"
 
 [dependencies]
-itertools = "0.10"
+itertools = "0.11"
 ipfs-api = { git = "https://github.com/iamjpotts/rust-ipfs-api", branch = "20221203-basic-auth", features = ["ipfs-api-backend-hyper", "with-hyper-tls"], default_features = false }
 thiserror = "1.0"
 tokio = { version = "1.29", features = ["macros", "rt-multi-thread", "time"] }
