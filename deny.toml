@@ -40,6 +40,8 @@ skip = [
 skip-tree = [
     # Transitive dependency of both hyper-tls (through native-tls and schannel) and tokio (through mio)
     { name = "windows-sys" },
+    # It's a mess of duplicate dependencies as of version 0.16.0
+    { name = "ipfs-api" }
 ]
 wildcards = "warn"
 
