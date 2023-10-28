@@ -4,10 +4,7 @@ notice = "deny"
 unmaintained = "deny"
 vulnerability = "deny"
 yanked = "deny"
-ignore = [
-    # Requires moving away from hyper-tls dependency of ipfs-api, since hyper-tls is no longer in maintenance
-    "RUSTSEC-2023-0034",
-]
+ignore = []
 
 # This library uses the MPL-2 license.
 #
@@ -16,7 +13,6 @@ ignore = [
 allow = [
     "Apache-2.0",
     "BSD-2-Clause",
-    "BSD-3-Clause",
     "MIT",
     "MPL-2.0",
     "Unicode-DFS-2016",
