@@ -22,20 +22,14 @@ confidence-threshold = 1.0
 unlicensed = "deny"
 
 [bans]
-allow = [
-]
+allow = []
 deny = [
     # License is non-trivial
     { name = "ring" },
 ]
 multiple-versions = "warn"
-skip = [
-    # Transitive dependency of both simple-logger and tokio (tokio has newer)
-    { name = "hermit-abi" },
-]
+skip = []
 skip-tree = [
-    # Transitive dependency of both hyper-tls (through native-tls and schannel) and tokio (through mio)
-    { name = "windows-sys" },
     # It's a mess of duplicate dependencies as of version 0.16.0
     { name = "ipfs-api" }
 ]
@@ -43,11 +37,11 @@ wildcards = "warn"
 
 [sources]
 allow-git = [
+    # TODO: Remove once rust-ipfs-api releases a version with basic auth
     "https://github.com/iamjpotts/rust-ipfs-api"
 ]
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-# TODO: Change to deny once rust-ipfs-api releases a version with basic auth
-unknown-git = "warn"
+unknown-git = "deny"
 unknown-registry = "deny"
 
 [sources.allow-org]
