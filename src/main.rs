@@ -1,19 +1,46 @@
-
 use std::env;
+use std::path::Path;
 use std::process::ExitCode;
 
+use async_recursion::async_recursion;
+use clap::Parser;
+use clap_derive::{Parser, ValueEnum};
+use futures::StreamExt;
 use ipfs_api::{IpfsApi, IpfsClient, TryFromUri};
 use ipfs_api::request::FilesLs;
 use ipfs_api::response::FilesEntry;
+use tokio::io::AsyncWriteExt;
+
 use ipfs_cp::errors::MainError;
+use ipfs_cp::util::format_size;
 
 const IPFS_ENTRY_TYPE_FILE: u64 = 0;
 const IPFS_ENTRY_TYPE_FOLDER: u64 = 1;
 
+#[derive(Clone, ValueEnum)]
 enum UnpinnedRule {
     Ban,
     Copy,
     Ignore
+}
+
+#[derive(Parser)]
+struct Args {
+    #[arg(long, help = "What do do with unpinned sources")]
+    unpinned: UnpinnedRule,
+
+    /// Copy to a local path instead of to another IPFS server.
+    local_dest_path: Option<String>
+}
+
+enum Destination {
+    Ipfs {
+        api_url: String,
+        username: String,
+        password: String,
+        folder: String
+    },
+    LocalPath(String)
 }
 
 fn expect_env(name: &str) -> String {
@@ -25,54 +52,67 @@ fn expect_env(name: &str) -> String {
 async fn main() -> ExitCode {
     println!("Hello, world!");
 
-    if std::env::args().len() > 2 {
-        eprintln!("Incorrect number of arguments; should be none, --copy-unpinned, or --skip-unpinned.");
-        return ExitCode::FAILURE;
-    }
-
-    let rule = if let Some(arg) = std::env::args().nth(1) {
-        match arg.as_str() {
-            "--copy-unpinned" => UnpinnedRule::Copy,
-            "--skip-unpinned" => UnpinnedRule::Ignore,
-            _ => {
-                eprintln!("Invalid flag: {}", arg);
-                return ExitCode::FAILURE;
-            }
-        }
-    }
-    else {
-        UnpinnedRule::Ban
-    };
+    let args = Args::parse();
 
     let src_api_url = expect_env("SRC_API_URL");
     let src_username = expect_env("SRC_USERNAME");
     let src_password = expect_env("SRC_PASSWORD");
 
-    let dst_api_url = expect_env("DST_API_URL");
-    let dst_username = expect_env("DST_USERNAME");
-    let dst_password = expect_env("DST_PASSWORD");
-    let dst_folder = expect_env("DST_FOLDER");
+    let dst = match args.local_dest_path {
+        None => {
+            let dst_api_url = expect_env("DST_API_URL");
+            let dst_username = expect_env("DST_USERNAME");
+            let dst_password = expect_env("DST_PASSWORD");
+            let dst_folder = expect_env("DST_FOLDER");
+
+            Destination::Ipfs {
+                api_url: dst_api_url,
+                username: dst_username,
+                password: dst_password,
+                folder: dst_folder
+            }
+        },
+        Some(local_path) => Destination::LocalPath(local_path)
+    };
 
     println!("Source        : {}", src_api_url);
-    println!("Target        : {}", dst_api_url);
-    println!("Target folder : {}", dst_folder);
 
-    if !dst_folder.starts_with("/") {
-        eprintln!("DST_FOLDER must start with / but was: {}", dst_folder);
-        return ExitCode::FAILURE;
-    }
+    let result = match dst {
+        Destination::Ipfs { api_url: dst_api_url, username: dst_username, password: dst_password, folder: dst_folder, .. } => {
+            println!("Target        : {}", dst_api_url);
+            println!("Target folder : {}", dst_folder);
 
-    let source = IpfsClient::from_str(&src_api_url)
-        .unwrap()
-        .with_credentials(&src_username, &src_password);
+            if !dst_folder.starts_with("/") {
+                eprintln!("DST_FOLDER must start with / but was: {}", dst_folder);
+                return ExitCode::FAILURE;
+            }
 
-    let target = IpfsClient::from_str(&dst_api_url)
-        .unwrap()
-        .with_credentials(&dst_username, &dst_password);
+            let source = IpfsClient::from_str(&src_api_url)
+                .unwrap()
+                .with_credentials(&src_username, &src_password);
 
-    println!("Running");
+            let target = IpfsClient::from_str(&dst_api_url)
+                .unwrap()
+                .with_credentials(&dst_username, &dst_password);
 
-    if let Err(e) = run(&source, &target, rule, &dst_folder).await {
+            println!("Running");
+
+            run(&source, &target, args.unpinned, &dst_folder).await
+        },
+        Destination::LocalPath(dst_folder) => {
+            println!("Target folder : {}", dst_folder);
+
+            let source = IpfsClient::from_str(&src_api_url)
+                .unwrap()
+                .with_credentials(&src_username, &src_password);
+
+            println!("Running");
+
+            run_remote_to_local(&source, args.unpinned, &dst_folder).await
+        }
+    };
+
+    if let Err(e) = result {
         println!();
         eprintln!("Oh, no: {:?}", e);
         ExitCode::FAILURE
@@ -84,7 +124,7 @@ async fn main() -> ExitCode {
     }
 }
 
-async fn run<A: IpfsApi<Error = ipfs_api::Error>>(source: &A, target: &A, rule: UnpinnedRule, target_folder: &str) -> Result<(), MainError> {
+async fn get_file_list<A: IpfsApi<Error = ipfs_api::Error>>(source: &A, rule: UnpinnedRule) -> Result<Vec<FilesEntry>, MainError> {
     println!("Getting file list");
 
     let request = FilesLs {
@@ -103,12 +143,6 @@ async fn run<A: IpfsApi<Error = ipfs_api::Error>>(source: &A, target: &A, rule: 
     for entry in &entries {
         println!("  name: {}, size: {}, type: {}, hash: {}", entry.name, entry.size, entry.typ, entry.hash);
     }
-
-    println!();
-    println!("Creating target folder {}", target_folder);
-
-    target.files_mkdir(target_folder, true)
-        .await?;
 
     // Sort files first, then folders. Among files, sort by size ascending.
     // Folders do not report their size; it is reported as zero.
@@ -160,7 +194,7 @@ async fn run<A: IpfsApi<Error = ipfs_api::Error>>(source: &A, target: &A, rule: 
             UnpinnedRule::Ban => {
                 return Err(
                     MainError::Message(
-                        "Either add --skip-unpinned or --copy-unpinned; however copying is likely to fail (hang indefinitely) due to source data having been garbage collected.".into()
+                        "Either add --unpinned skip or --unpinned copy; however copying is likely to fail (hang indefinitely) due to source data having been garbage collected.".into()
                     )
                 );
             },
@@ -179,6 +213,101 @@ async fn run<A: IpfsApi<Error = ipfs_api::Error>>(source: &A, target: &A, rule: 
         }
     }
     println!();
+
+    Ok(entries)
+}
+
+async fn run_remote_to_local<A: IpfsApi<Error = ipfs_api::Error>>(source: &A, rule: UnpinnedRule, target_folder: &str) -> Result<(), MainError> {
+    let entries = get_file_list(source, rule).await?;
+
+    println!("Checking target folder {}", target_folder);
+
+    let target_path = Path::new(target_folder);
+    if !target_path.exists() {
+        return Err(MainError::Message(format!("Target folder {target_folder} does not exist")));
+    }
+    else if !target_path.is_dir() {
+        return Err(MainError::Message(format!("Target folder {target_folder} is not a directory")));
+    }
+
+    copy_remote_to_local(source, "/", entries, target_path).await
+}
+
+#[async_recursion(?Send)]
+async fn copy_remote_to_local<A: IpfsApi<Error = ipfs_api::Error>>(source: &A, source_path: &str, entries: Vec<FilesEntry>, target_path: &Path) -> Result<(), MainError> {
+    for (i, entry) in entries.iter().enumerate() {
+        println!();
+        println!(
+            "Copying {} of {} ({}): {}",
+            i + 1,
+            entries.len(),
+            match entry.typ {
+                IPFS_ENTRY_TYPE_FILE => format_size(entry.size),
+                IPFS_ENTRY_TYPE_FOLDER => "folder".into(),
+                _ => "other".into()
+            },
+            entry.name
+        );
+        println!();
+
+        let entry_full_name = format!("{source_path}{}", entry.name);
+
+        match entry.typ {
+            IPFS_ENTRY_TYPE_FILE => {
+                let dest_path = target_path.join(&entry.name);
+
+                println!("  ..downloading {entry_full_name}");
+                let mut stream = source.files_read(&entry_full_name);
+                let mut copied = 0;
+                let mut last_msg = None;
+
+                let mut dest_file = tokio::fs::File::create(dest_path).await?;
+
+                while let Some(chunk_result) = stream.next().await {
+                    let chunk = chunk_result?;
+
+                    dest_file.write(&chunk).await?;
+                    copied += chunk.len() as u64;
+
+                    let msg = format_size(copied);
+                    if last_msg.as_ref() != Some(&msg) {
+                        println!("  ..downloaded {} of {}", msg, format_size(entry.size));
+                        last_msg = Some(msg);
+                    }
+                }
+
+                println!("  ..downloaded {entry_full_name}.");
+            }
+            IPFS_ENTRY_TYPE_FOLDER => {
+                let parent_mfs_path = format!("{entry_full_name}/");
+
+                let lso = FilesLs {
+                    path: Some(&parent_mfs_path),
+                    long: Some(true),
+                    unsorted: Some(false)
+                };
+
+                let ls_response = source.files_ls_with_options(lso).await?;
+
+                let parent_local_path = target_path.join(&entry.name);
+                tokio::fs::create_dir_all(&parent_local_path).await?;
+
+                copy_remote_to_local(source, &parent_mfs_path, ls_response.entries, &parent_local_path).await?;
+            },
+            other => println!("Would ignore item {} of type {other}", entry_full_name),
+        }
+    }
+
+    Ok(())
+}
+
+async fn run<A: IpfsApi<Error = ipfs_api::Error>>(source: &A, target: &A, rule: UnpinnedRule, target_folder: &str) -> Result<(), MainError> {
+    let entries = get_file_list(source, rule).await?;
+
+    println!("Creating target folder {}", target_folder);
+
+    target.files_mkdir(target_folder, true)
+        .await?;
 
     copy_all_entries(&entries, target, target_folder)
         .await?;
@@ -253,7 +382,7 @@ async fn copy_all_entries<A: IpfsApi<Error = ipfs_api::Error>>(entries: &Vec<Fil
             i + 1,
             entries.len(),
             match entry.typ {
-                IPFS_ENTRY_TYPE_FILE => format!("{} mb", entry.size / (1024 * 1024)),
+                IPFS_ENTRY_TYPE_FILE => format_size(entry.size),
                 IPFS_ENTRY_TYPE_FOLDER => "folder".into(),
                 _ => "other".into()
             }

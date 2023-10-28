@@ -10,13 +10,17 @@ keywords = ["ipfs"]
 name = "ipfs-cp"
 license = "MPL-2.0"
 readme = "README.md"
-rust-version = "1.68"
+rust-version = "1.70"
 version = "0.0.2-alpha"
 
 [dependencies]
+async-recursion = "1.0"
+clap = "4"
+clap_derive = "4"
+futures = "0.3"
 itertools = "0.11"
 ipfs-api = { git = "https://github.com/iamjpotts/rust-ipfs-api", branch = "20221203-basic-auth", features = ["ipfs-api-backend-hyper", "with-hyper-tls"], default_features = false }
 thiserror = "1.0"
-tokio = { version = "1.33", features = ["macros", "rt-multi-thread", "time"] }
+tokio = { version = "1.33", features = ["fs", "macros", "rt-multi-thread", "time"] }
 
 [dev-dependencies]
