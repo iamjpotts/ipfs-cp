@@ -21,6 +21,6 @@ futures = "0.3"
 itertools = "0.12"
 ipfs-api = { git = "https://github.com/iamjpotts/rust-ipfs-api", branch = "20221203-basic-auth", features = ["ipfs-api-backend-hyper", "with-hyper-tls"], default_features = false }
 thiserror = "1.0"
-tokio = { version = "1.33", features = ["fs", "macros", "rt-multi-thread", "time"] }
+tokio = { version = "1.34", features = ["fs", "macros", "rt-multi-thread", "time"] }
 
 [dev-dependencies]
