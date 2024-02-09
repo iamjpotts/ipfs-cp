@@ -10,7 +10,7 @@ keywords = ["ipfs"]
 name = "ipfs-cp"
 license = "MPL-2.0"
 readme = "README.md"
-rust-version = "1.70"
+rust-version = "1.74"
 version = "0.0.2-alpha"
 
 [dependencies]
