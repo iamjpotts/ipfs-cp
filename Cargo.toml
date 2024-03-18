@@ -14,7 +14,7 @@ rust-version = "1.74"
 version = "0.0.2-alpha"
 
 [dependencies]
-async-recursion = "1.0"
+async-recursion = "1.1"
 clap = "4"
 clap_derive = "4"
 futures = "0.3"
