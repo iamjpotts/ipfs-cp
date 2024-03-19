@@ -1,10 +1,7 @@
 
 [advisories]
-notice = "deny"
-unmaintained = "deny"
-vulnerability = "deny"
-yanked = "deny"
 ignore = []
+version = 2
 
 # This library uses the MPL-2 license.
 #
@@ -17,9 +14,8 @@ allow = [
     "MPL-2.0",
     "Unicode-DFS-2016",
 ]
-default = "deny"
 confidence-threshold = 1.0
-unlicensed = "deny"
+version = 2
 
 [bans]
 allow = []
