@@ -15,7 +15,7 @@ version = "0.0.2-alpha"
 
 [dependencies]
 async-recursion = "1.0"
-clap = "4.5.3"
+clap = "4.5.4"
 clap_derive = "4.5.3"
 futures = "0.3"
 itertools = "0.12"
