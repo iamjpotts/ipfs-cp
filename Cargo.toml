@@ -16,7 +16,7 @@ version = "0.0.2-alpha"
 [dependencies]
 async-recursion = "1.0"
 clap = "4.5.3"
-clap_derive = "4.5.3"
+clap_derive = "4.5.4"
 futures = "0.3"
 itertools = "0.12"
 ipfs-api = { git = "https://github.com/iamjpotts/rust-ipfs-api", branch = "20221203-basic-auth", features = ["ipfs-api-backend-hyper", "with-hyper-tls"], default_features = false }
