@@ -18,7 +18,7 @@ async-recursion = "1.0"
 clap = "4.5.3"
 clap_derive = "4.5.3"
 futures = "0.3"
-itertools = "0.12"
+itertools = "0.13"
 ipfs-api = { git = "https://github.com/iamjpotts/rust-ipfs-api", branch = "20221203-basic-auth", features = ["ipfs-api-backend-hyper", "with-hyper-tls"], default_features = false }
 thiserror = "1.0"
 tokio = { version = "1.37", features = ["fs", "macros", "rt-multi-thread", "time"] }
